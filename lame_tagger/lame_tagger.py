@@ -1,13 +1,12 @@
 #!/usr/bin/env python
-# A lame POS tagger based on Hidden Markov Model (using HMMTK)
+# lame_tagger.py - A POS tagger based on Hidden Markov Model (using HMMTK)
 # Written by Yuchen Zhang
 # Dec, 2012
 
 import sys
 import pickle
 import math
-import hotshot, hotshot.stats
-from hmmtk import hmm_faster, hmm
+from hmmpytk import hmm_faster
 
 INF = float('inf')    # infinity !!!
 NEG_INF = float('-inf')
@@ -62,18 +61,13 @@ def train_unsupervised(train_file, model_file):
                 tags[curr_tag] = 1
             else:
                 tags[curr_tag] += 1
-        
-        # all_ob_seqs.append(ob_list)
 
     
     # initialize HMM with tags as states and words as observations, and randomzied probs
     train_hmm = hmm_faster.HMM(states = tags.keys(), observations = vocab.keys())
-    # train_hmm = hmm.HMM(states = tags.keys(), observations = vocab.keys())
     train_hmm.randomize_matrices(1123)
     
     # starts training
-    # train_hmm.train(ob_list, max_iteration = 1000)
-    # train_hmm.train_multiple(all_ob_seqs, max_iteration = 1000)
     train_hmm.train(all_ob_seqs, max_iteration = 1000, delta = 0.001)        
     
     # get prior for each tag
@@ -82,12 +76,7 @@ def train_unsupervised(train_file, model_file):
         tags[t] = ln(float(tags[t]) / float(total_tags))
     
     fmodel = open(model_file, 'w')
-#    hmm_model = (train_hmm.get_states(), 
-#                 train_hmm.get_observations(), 
-#                 train_hmm.get_initial_matrix(), 
-#                 train_hmm.get_transition_matrix(), 
-#                 train_hmm.get_emission_matrix())    
-    hmm_model = train_hmm.get_model_dict()
+    hmm_model = train_hmm.get_model()
     
     pickle.dump((hmm_model, tags), fmodel)
     fmodel.close()
@@ -282,14 +271,6 @@ def tag_string(target_str, hmm_model, prior_dict):
         for ob in xrange(len(emit_matrix[st])):
             emit_matrix[st][ob] = emit_matrix[st][ob] - log_sum
     
-#    for tag in emit_matrix:
-#        log_sum = NEG_INF
-#        for w in emit_matrix[tag]:
-#            log_sum = log_add(log_sum, emit_matrix[tag][w])
-#        
-#        for w in emit_matrix[tag]:
-#            emit_matrix[tag][w] = emit_matrix[tag][w] - log_sum
-#    
     # viterbi
     tag_seq = hmm_model.viterbi(tokens)
     # print tag_seq
@@ -312,8 +293,10 @@ def tag_file(target_file, hmm_model, prior):
     ftarget.close()
 
 def print_usage():
-    sys.stderr.write("./lame_tagger.py --train train-file.txt model-file.hmm\n")
-    sys.stderr.write("OR:\n")
+    sys.stderr.write("Training the POS tagger (supervised and unsupervised):\n")
+    sys.stderr.write("./lame_tagger.py --train-supervised train-file.txt model-file.hmm\n")
+    sys.stderr.write("./lame_tagger.py --train-unsupervised train-file.txt model-file.hmm\n")
+    sys.stderr.write("Tag a file:\n")
     sys.stderr.write("./lame_tagger.py --tag test-file.txt model-file.hmm\n")
 
 def main():
@@ -323,24 +306,23 @@ def main():
     
     idx = 1
     while (idx < len(sys.argv)):
-        if (sys.argv[idx].lower() == '--train'):
+        curr_argv = sys.argv[idx].lower()
+        if (curr_argv == '--train-supervised' or curr_argv == '--train-unsupervised'):
             if (idx + 2 >= len(sys.argv)):
                 sys.stderr.write("Must specify train_manual file and model file.\n")
                 print_usage()
                 return 2
+            
             train_file = sys.argv[idx + 1]
             model_file = sys.argv[idx + 2]
-            # train_supervised(train_file, model_file)
             
-            # profiling
-            # prof = hotshot.Profile("train.unsupervised.prof")
-            # benchtime, stones = prof.runcall(train_unsupervised, train_file, model_file)
-            # prof.close()
-            train_unsupervised(train_file, model_file)
-            
+            if (curr_argv == "--train-supervised"):
+                train_supervised(train_file, model_file)
+            elif (curr_argv == '--train-unsupervised'):
+                train_unsupervised(train_file, model_file)
             break
         
-        elif (sys.argv[idx].lower() == '--tag'):
+        elif (curr_argv == '--tag'):
             if (idx + 2 >= len(sys.argv)):
                 sys.stderr.write("Must specify test file and model file.\n")
                 print_usage()
@@ -354,7 +336,6 @@ def main():
             
             (st_list, ob_list, Pi, A, B) = hmm_matrices
             hmm_model = hmm_faster.HMM(st_list, ob_list, Pi, A, B)
-            # hmm_model = hmm.HMM(st_list, ob_list, Pi, A, B)
             
             tag_file(test_file, hmm_model, prior)
             break

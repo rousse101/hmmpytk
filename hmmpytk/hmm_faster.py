@@ -1,5 +1,5 @@
-# hmmtk/hmm.py - HMM (Hidden Markov Model) implementation written in Python 
-# First version author: Yuchen Zhang (yuchenz@cs.cmu.edu)
+# hmmpytk/hmm_faster.py - HMM (Hidden Markov Model) implementation written in Python 
+# Yuchen Zhang (yuchenz@cs.cmu.edu)
 # Version history:
 # 
 # Dec 31, 2012, 0.2.0 - Big improvements in speed
@@ -112,7 +112,6 @@ class HMM:
 
                 viterbi_table[t][st_j] = viterbi_t_j
                 bp_table[t - 1][st_j] = curr_best_st
-
         
         # perform the viterbi back-trace
         t = len(bp_table) - 1
@@ -135,7 +134,7 @@ class HMM:
     
     # given the observation sequence, return its probability given the model
     def forward(self, ob_seq_int):
-        sys.stderr.write("Computing Alpha table ... \n")
+        sys.stderr.write("\nComputing Alpha table ... \n")
         N = len(self.st_list)
         ob_seq_len = len(ob_seq_int)
         
@@ -160,7 +159,7 @@ class HMM:
     
     # backward algorithm
     def backward(self, ob_seq_int):
-        sys.stderr.write("Computing Beta table ... \n")
+        sys.stderr.write("\nComputing Beta table ... \n")
         N = len(self.st_list)
         ob_seq_len = len(ob_seq_int)
         
@@ -563,7 +562,7 @@ class HMM:
         self.set_emission_matrix(B_matrix)
         
     # converts the matrices into dict format for output
-    def get_model_dict(self):
+    def get_model(self):
         init_matrix_dict = dict()
         trans_matrix_dict = dict()
         emit_matrix_dict = dict()
@@ -586,6 +585,6 @@ class HMM:
     # save the HMM (init, trans, emit) matrices to file
     def write_to_file(self, model_filename):
         fmodel = open(model_filename, 'w')
-        pickle.dump(self.get_model_dict(), fmodel)
+        pickle.dump(self.get_model(), fmodel)
         fmodel.close()
         
