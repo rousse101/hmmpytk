@@ -89,7 +89,7 @@ class HMM:
         N = len(self.st_list)
         ob_seq_len = len(ob_seq)
         
-        viterbi_table = [[self.NEG_INF for st in xrange(N)] for t in xrange(ob_seq_len)]
+        viterbi_table = [[self.NEG_INF for st in xrange(N)] for t in xrange(ob_seq_len + 1)]
         bp_table = [[self.NEG_INF for st in xrange(N)] for t in xrange(ob_seq_len)]
         ob_seq_int = [self.ob_list_index[ob] for ob in ob_seq]
 
@@ -97,7 +97,7 @@ class HMM:
         for i in xrange(N):
             viterbi_table[0][i] = self.init_matrix[i]
         
-        for t in xrange(1, ob_seq_len): # loop through time
+        for t in xrange(1, ob_seq_len + 1): # loop through time
             ot = ob_seq_int[t - 1]
             for st_j in xrange(N): # for each state
                 viterbi_t_j = self.NEG_INF
@@ -111,7 +111,7 @@ class HMM:
                         curr_best_st = st_i
 
                 viterbi_table[t][st_j] = viterbi_t_j
-                bp_table[t][st_j] = curr_best_st
+                bp_table[t - 1][st_j] = curr_best_st
 
         
         # perform the viterbi back-trace
@@ -271,7 +271,6 @@ class HMM:
             for st_i in xrange(N):
                 gamma_t_i = self.__ln(0.0)
                 for st_j in xrange(N):
-                    # Xi_t_i_j = self.__Xi(st_i, st_j, t, ob_seq_int)
                     Xi_t_numerator = self.alpha_table[t + 1][st_i] + self.trans_matrix[st_i][st_j] + self.emit_matrix[st_j][ot_next] + self.beta_table[t + 1][st_j]
                     Xi_t_i_j = (Xi_t_numerator - Xi_t_denominator)
                     
@@ -524,9 +523,6 @@ class HMM:
         N = len(self.st_list)
         ob_list_len = len(self.ob_list)
         
-        # self.init_matrix = dict()
-        # self.trans_matrix = dict()
-        # self.emit_matrix = dict()
         self.init_matrix = [0.0 for st in xrange(N)]
         self.init_matrix_copy = [0.0 for st in xrange(N)]
         self.trans_matrix = [[0.0 for st_i in xrange(N)] for st_j in xrange(N)]
@@ -566,6 +562,7 @@ class HMM:
         self.set_transition_matrix(A_matrix)
         self.set_emission_matrix(B_matrix)
         
+    # converts the matrices into dict format for output
     def get_model_dict(self):
         init_matrix_dict = dict()
         trans_matrix_dict = dict()

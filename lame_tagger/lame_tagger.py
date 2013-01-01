@@ -263,6 +263,8 @@ def tag_string(target_str, hmm_model, prior_dict):
     if (curr_idx > curr_start):
         tokens.append(target_str[curr_start:curr_idx])
     
+    tokens = filter(lambda x:len(x) > 0, tokens)
+    
     # use prior distribution of each tag to estimate 
     # P(unknown word | tag) = Prior[tag] ^ 2
     for w in tokens:
