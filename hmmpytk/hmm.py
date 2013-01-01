@@ -5,7 +5,7 @@
 # Dec 28, 2012, 0.1.1 - Added support for training on multiple instances
 # Dec 27, 2012, 0.1.0 - initial version
 # 
-# You may distribute this software freely. 
+# *** THIS PACKAGE IS OBSOLETE, PLEASE USE THE MORE CURRENT hmm_faster.py *** 
 # 
 import sys
 import math

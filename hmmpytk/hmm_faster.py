@@ -38,6 +38,8 @@ class HMM:
         self.xi_table = None
         self.gamma_table = None
         self.viterbi_table = None
+        
+        self.verbose_mode = False
                 
         if (states is not None):
             self.set_states(states)
@@ -134,7 +136,9 @@ class HMM:
     
     # given the observation sequence, return its probability given the model
     def forward(self, ob_seq_int):
-        sys.stderr.write("\nComputing Alpha table ... \n")
+        if (self.verbose_mode):
+            sys.stderr.write("\nComputing Alpha table ... \n")
+            
         N = len(self.st_list)
         ob_seq_len = len(ob_seq_int)
         
@@ -147,7 +151,9 @@ class HMM:
             self.alpha_table[0][i] = self.init_matrix[i]
 
         for t in xrange(1, ob_seq_len + 1): # loop through time
-            sys.stderr.write("\rComputing alpha table t = %d out of %d"%(t, len(ob_seq_int)))            
+            if (self.verbose_mode):
+                sys.stderr.write("\rComputing alpha table t = %d out of %d"%(t, len(ob_seq_int)))  
+                          
             ot = ob_seq_int[t - 1]
             for st_j in xrange(N):
                 alpha_t_j = self.NEG_INF
@@ -159,7 +165,9 @@ class HMM:
     
     # backward algorithm
     def backward(self, ob_seq_int):
-        sys.stderr.write("\nComputing Beta table ... \n")
+        if (self.verbose_mode):
+            sys.stderr.write("\nComputing Beta table ... \n")
+            
         N = len(self.st_list)
         ob_seq_len = len(ob_seq_int)
         
@@ -180,7 +188,9 @@ class HMM:
     
         # starting from 2nd to last and move backwards
         for t in xrange(ob_seq_len - 1, -1, -1):
-            sys.stderr.write("\rComputing beta table t = %d out of %d"%(t, len(ob_seq_int)))            
+            if (self.verbose_mode):
+                sys.stderr.write("\rComputing beta table t = %d out of %d"%(t, len(ob_seq_int)))
+                            
             ot_next = ob_seq_int[t]
             for st_i in xrange(N):
                 beta_t_i = self.NEG_INF
@@ -239,7 +249,9 @@ class HMM:
             self.trans_matrix, self.trans_matrix_copy = self.trans_matrix_copy, self.trans_matrix
             self.emit_matrix, self.emit_matrix_copy = self.emit_matrix_copy, self.emit_matrix
             
-            sys.stderr.write("Iteration %d, average likelihood: %.10f\n"%(iteration, avg_ll))
+            if (self.verbose_mode):
+                sys.stderr.write("Iteration %d, average likelihood: %.10f\n"%(iteration, avg_ll))
+                
             if (avg_ll - prev_avg_ll < delta):
                 break
             
@@ -257,9 +269,13 @@ class HMM:
         N = len(self.st_list)
         ob_seq_len = len(ob_seq_int)
 
-        sys.stderr.write("\nCompute Xi and Gamma table ... \n")
+        if (self.verbose_mode):
+            sys.stderr.write("\nCompute Xi and Gamma table ... \n")
+            
         for t in xrange(ob_seq_len - 1):
-            sys.stderr.write("T %d of %d ... \r"%(t, ob_seq_len))
+            if (self.verbose_mode):
+                sys.stderr.write("T %d of %d ... \r"%(t, ob_seq_len))
+                
             # compute the denominator for Xi at time t
             Xi_t_denominator = self.__ln(0.0)
             ot_next = ob_seq_int[t + 1]
@@ -277,13 +293,19 @@ class HMM:
                     gamma_t_i = self.__log_add(gamma_t_i, Xi_t_i_j)
                 self.gamma_table[t][st_i] = gamma_t_i
         
-        sys.stderr.write("\nComputing new values for init_matrix ... \n")
+        if (self.verbose_mode):
+            sys.stderr.write("\nComputing new values for init_matrix ... \n")
+            
         for st_i in xrange(N):
             self.init_matrix_copy[st_i] = self.gamma_table[0][st_i]
         
-        sys.stderr.write("\nComputing new values for trans_matrix ... \n")
+        if (self.verbose_mode):
+            sys.stderr.write("\nComputing new values for trans_matrix ... \n")
+            
         for st_i in xrange(N):
-            sys.stderr.write("State %d of %d ... \r"%(st_i, N))
+            if (self.verbose_mode):
+                sys.stderr.write("State %d of %d ... \r"%(st_i, N))
+                
             trans_denominator = self.NEG_INF
             
             for t in xrange(ob_seq_len - 1):
@@ -296,10 +318,14 @@ class HMM:
                 
                 self.trans_matrix_copy[st_i][st_j] = (trans_numerator - trans_denominator)
         
-        sys.stderr.write("\nComputing new values for emit_matrix ... \n")
+        if (self.verbose_mode):
+            sys.stderr.write("\nComputing new values for emit_matrix ... \n")
+            
         emit_numerators_list = [self.NEG_INF for vk in xrange(len(self.ob_list))] 
         for st_j in xrange(N):
-            sys.stderr.write("State %d of %d ... \r"%(st_j, N))
+            if (self.verbose_mode):
+                sys.stderr.write("State %d of %d ... \r"%(st_j, N))
+                
             emit_denominator = self.NEG_INF
             for vk in xrange(len(self.ob_list)):
                 emit_numerators_list[vk] = self.NEG_INF
@@ -511,6 +537,10 @@ class HMM:
             result_list = map(lambda x: self.__ln(x), result_list)
         
         return result_list
+    
+    # Set the verbose mode ON/OFF
+    def set_verbose(self, verbose):
+        self.verbose_mode = verbose
     
     # randomize the probabilities in init, trans, and emit matrices
     def randomize_matrices(self, seed = None):
